@@ -11,20 +11,15 @@ import org.example.com.hospitalmanagementsystem.exception.ResourceNotFoundExcept
 import org.example.com.hospitalmanagementsystem.exception.UnauthorizedException;
 import org.example.com.hospitalmanagementsystem.notification.EmailService;
 import org.example.com.hospitalmanagementsystem.websocket.NotificationService;
+import org.example.com.hospitalmanagementsystem.storage.CloudinaryStorageService;
 import org.example.com.hospitalmanagementsystem.repository.AppointmentRepository;
 import org.example.com.hospitalmanagementsystem.repository.DiagnosisRepository;
 import org.example.com.hospitalmanagementsystem.authentication.CustomUserDetails;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -34,9 +29,7 @@ public class DiagnosisService {
     private final AppointmentRepository appointmentRepository;
     private final EmailService emailService;
     private final NotificationService notificationService;
-
-    @Value("${app.upload.dir}")
-    private String uploadDir;
+    private final CloudinaryStorageService cloudinaryStorageService;
 
     @Transactional
     public DiagnosisResponse createOrUpdateDiagnosis(Long appointmentId, DiagnosisRequest request,
@@ -85,22 +78,9 @@ public class DiagnosisService {
         Diagnosis diagnosis = diagnosisRepository.findByAppointmentId(appointmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Diagnosis not found"));
 
-        Path uploadPath = Paths.get(uploadDir);
-        if (!Files.exists(uploadPath)) {
-            Files.createDirectories(uploadPath);
-        }
+        String fileUrl = cloudinaryStorageService.uploadPrescription(file, appointmentId);
 
-        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-        Path filePath = uploadPath.resolve(fileName);
-        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-
-        if (diagnosis.getPrescriptionFilePath() != null) {
-            try {
-                Files.deleteIfExists(Paths.get(diagnosis.getPrescriptionFilePath()));
-            } catch (IOException ignored) {}
-        }
-
-        diagnosis.setPrescriptionFilePath(filePath.toString());
+        diagnosis.setPrescriptionFilePath(fileUrl);
         diagnosis.setPrescriptionFileName(file.getOriginalFilename());
 
         diagnosis = diagnosisRepository.save(diagnosis);

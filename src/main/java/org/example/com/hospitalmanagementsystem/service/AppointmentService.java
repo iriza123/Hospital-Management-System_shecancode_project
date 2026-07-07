@@ -15,6 +15,7 @@ import org.example.com.hospitalmanagementsystem.exception.BadRequestException;
 import org.example.com.hospitalmanagementsystem.exception.ResourceNotFoundException;
 import org.example.com.hospitalmanagementsystem.exception.UnauthorizedException;
 import org.example.com.hospitalmanagementsystem.notification.EmailService;
+import org.example.com.hospitalmanagementsystem.notification.SmsService;
 import org.example.com.hospitalmanagementsystem.websocket.NotificationService;
 import org.example.com.hospitalmanagementsystem.repository.AppointmentRepository;
 import org.example.com.hospitalmanagementsystem.repository.DoctorRepository;
@@ -40,6 +41,7 @@ public class AppointmentService {
     private final DoctorRepository doctorRepository;
     private final HospitalServiceRepository serviceRepository;
     private final EmailService emailService;
+    private final SmsService smsService;
     private final NotificationService notificationService;
 
     private static final int MAX_APPOINTMENTS_PER_DOCTOR_PER_DAY = 4;
@@ -179,6 +181,13 @@ public class AppointmentService {
                 appointment.getAppointmentDate().toString()
         );
 
+        smsService.sendAppointmentConfirmation(
+                appointment.getPatient().getPhoneNumber(),
+                appointment.getPatient().getFullName(),
+                appointment.getAppointmentDate().toString(),
+                appointment.getAppointmentTime().toString()
+        );
+
         return response;
     }
 
@@ -250,6 +259,12 @@ public class AppointmentService {
         notificationService.notifyAppointmentCancelled(
                 appointment.getPatient().getId(),
                 appointment.getId(),
+                appointment.getAppointmentDate().toString()
+        );
+
+        smsService.sendAppointmentCancellationNotice(
+                appointment.getPatient().getPhoneNumber(),
+                appointment.getPatient().getFullName(),
                 appointment.getAppointmentDate().toString()
         );
 
