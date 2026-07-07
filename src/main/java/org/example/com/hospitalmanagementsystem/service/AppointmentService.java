@@ -21,6 +21,9 @@ import org.example.com.hospitalmanagementsystem.repository.DoctorRepository;
 import org.example.com.hospitalmanagementsystem.repository.HospitalServiceRepository;
 import org.example.com.hospitalmanagementsystem.repository.PatientRepository;
 import org.example.com.hospitalmanagementsystem.authentication.CustomUserDetails;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +45,10 @@ public class AppointmentService {
     private static final int MAX_APPOINTMENTS_PER_DOCTOR_PER_DAY = 4;
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "appointments", allEntries = true),
+            @CacheEvict(value = "reports", allEntries = true)
+    })
     public AppointmentResponse bookAppointment(AppointmentRequest request, CustomUserDetails patientDetails) {
         Patient patient = patientRepository.findById(patientDetails.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("Patient not found"));
@@ -115,6 +122,7 @@ public class AppointmentService {
         return toResponse(appointment);
     }
 
+    @Cacheable(value = "appointments", key = "'patient_' + #patientDetails.userId")
     public List<AppointmentResponse> getMyAppointments(CustomUserDetails patientDetails) {
         return appointmentRepository.findByPatientId(patientDetails.getUserId())
                 .stream()
@@ -122,6 +130,7 @@ public class AppointmentService {
                 .collect(Collectors.toList());
     }
 
+    @Cacheable(value = "appointments", key = "'doctor_' + #doctorDetails.userId")
     public List<AppointmentResponse> getDoctorAppointments(CustomUserDetails doctorDetails) {
         return appointmentRepository.findByDoctorId(doctorDetails.getUserId())
                 .stream()
@@ -129,6 +138,7 @@ public class AppointmentService {
                 .collect(Collectors.toList());
     }
 
+    @Cacheable(value = "appointments", key = "'all'")
     public List<AppointmentResponse> getAllAppointments() {
         return appointmentRepository.findAll()
                 .stream()
@@ -136,11 +146,16 @@ public class AppointmentService {
                 .collect(Collectors.toList());
     }
 
+    @Cacheable(value = "appointments", key = "#id")
     public AppointmentResponse getAppointmentById(Long id) {
         return toResponse(findById(id));
     }
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "appointments", allEntries = true),
+            @CacheEvict(value = "reports", allEntries = true)
+    })
     public AppointmentResponse approveAppointment(Long appointmentId) {
         Appointment appointment = findById(appointmentId);
         if (appointment.getStatus() != AppointmentStatus.PENDING) {
@@ -168,6 +183,10 @@ public class AppointmentService {
     }
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "appointments", allEntries = true),
+            @CacheEvict(value = "reports", allEntries = true)
+    })
     public AppointmentResponse rejectAppointment(Long appointmentId) {
         Appointment appointment = findById(appointmentId);
         if (appointment.getStatus() != AppointmentStatus.PENDING) {
@@ -192,6 +211,10 @@ public class AppointmentService {
     }
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "appointments", allEntries = true),
+            @CacheEvict(value = "reports", allEntries = true)
+    })
     public AppointmentResponse completeAppointment(Long appointmentId) {
         Appointment appointment = findById(appointmentId);
         if (appointment.getStatus() != AppointmentStatus.APPROVED) {
@@ -202,6 +225,10 @@ public class AppointmentService {
     }
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "appointments", allEntries = true),
+            @CacheEvict(value = "reports", allEntries = true)
+    })
     public AppointmentResponse cancelAppointment(Long appointmentId, CustomUserDetails patientDetails) {
         Appointment appointment = findById(appointmentId);
 
@@ -230,6 +257,7 @@ public class AppointmentService {
     }
 
     @Transactional
+    @CacheEvict(value = "appointments", allEntries = true)
     public AppointmentResponse reassignAppointment(Long appointmentId, AppointmentReassignRequest request) {
         Appointment appointment = findById(appointmentId);
 
