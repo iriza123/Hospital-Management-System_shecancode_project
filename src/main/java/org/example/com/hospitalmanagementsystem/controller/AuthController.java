@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.com.hospitalmanagementsystem.authentication.AuthService;
 import org.example.com.hospitalmanagementsystem.dto.request.LoginRequest;
 import org.example.com.hospitalmanagementsystem.dto.response.AuthResponse;
-import org.example.com.hospitalmanagementsystem.service.AuthService;
+import org.example.com.hospitalmanagementsystem.authentication.AuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
