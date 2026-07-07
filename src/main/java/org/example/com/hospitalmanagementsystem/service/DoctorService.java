@@ -11,6 +11,7 @@ import org.example.com.hospitalmanagementsystem.entity.HospitalService;
 import org.example.com.hospitalmanagementsystem.exception.BadRequestException;
 import org.example.com.hospitalmanagementsystem.exception.ResourceNotFoundException;
 import org.example.com.hospitalmanagementsystem.notification.EmailService;
+import org.example.com.hospitalmanagementsystem.websocket.NotificationService;
 import org.example.com.hospitalmanagementsystem.repository.DoctorRepository;
 import org.example.com.hospitalmanagementsystem.repository.HospitalRepository;
 import org.example.com.hospitalmanagementsystem.repository.HospitalServiceRepository;
@@ -36,6 +37,7 @@ public class DoctorService {
     private final HospitalServiceRepository serviceRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final NotificationService notificationService;
 
     @Transactional
     @Caching(evict = {
@@ -125,6 +127,7 @@ public class DoctorService {
         Doctor doctor = getDoctorInHospital(doctorId, hospital.getId());
         doctor.setActive(!doctor.isActive());
         doctor = doctorRepository.save(doctor);
+        notificationService.broadcastDoctorStatusChanged(doctor.getId(), doctor.getFullName(), doctor.isActive());
         return toResponse(doctor);
     }
 

@@ -15,6 +15,7 @@ import org.example.com.hospitalmanagementsystem.exception.BadRequestException;
 import org.example.com.hospitalmanagementsystem.exception.ResourceNotFoundException;
 import org.example.com.hospitalmanagementsystem.exception.UnauthorizedException;
 import org.example.com.hospitalmanagementsystem.notification.EmailService;
+import org.example.com.hospitalmanagementsystem.websocket.NotificationService;
 import org.example.com.hospitalmanagementsystem.repository.AppointmentRepository;
 import org.example.com.hospitalmanagementsystem.repository.DoctorRepository;
 import org.example.com.hospitalmanagementsystem.repository.HospitalServiceRepository;
@@ -36,6 +37,7 @@ public class AppointmentService {
     private final DoctorRepository doctorRepository;
     private final HospitalServiceRepository serviceRepository;
     private final EmailService emailService;
+    private final NotificationService notificationService;
 
     private static final int MAX_APPOINTMENTS_PER_DOCTOR_PER_DAY = 4;
 
@@ -102,7 +104,14 @@ public class AppointmentService {
                 request.getAppointmentDate().toString(),
                 request.getAppointmentTime().toString()
         );
-        
+
+        notificationService.notifyAppointmentBooked(
+                patient.getId(),
+                appointment.getId(),
+                doctor.getFullName(),
+                request.getAppointmentDate().toString()
+        );
+
         return toResponse(appointment);
     }
 
@@ -147,7 +156,14 @@ public class AppointmentService {
                 appointment.getAppointmentDate().toString(),
                 appointment.getAppointmentTime().toString()
         );
-        
+
+        notificationService.notifyAppointmentApproved(
+                appointment.getPatient().getId(),
+                appointment.getId(),
+                appointment.getDoctor().getFullName(),
+                appointment.getAppointmentDate().toString()
+        );
+
         return response;
     }
 
@@ -165,7 +181,13 @@ public class AppointmentService {
                 appointment.getPatient().getFullName(),
                 appointment.getAppointmentDate().toString()
         );
-        
+
+        notificationService.notifyAppointmentRejected(
+                appointment.getPatient().getId(),
+                appointment.getId(),
+                appointment.getAppointmentDate().toString()
+        );
+
         return response;
     }
 
@@ -196,7 +218,15 @@ public class AppointmentService {
         }
 
         appointment.setStatus(AppointmentStatus.CANCELLED);
-        return toResponse(appointmentRepository.save(appointment));
+        AppointmentResponse response = toResponse(appointmentRepository.save(appointment));
+
+        notificationService.notifyAppointmentCancelled(
+                appointment.getPatient().getId(),
+                appointment.getId(),
+                appointment.getAppointmentDate().toString()
+        );
+
+        return response;
     }
 
     @Transactional

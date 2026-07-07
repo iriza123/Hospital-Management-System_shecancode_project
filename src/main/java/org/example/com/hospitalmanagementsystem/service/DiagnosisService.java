@@ -10,6 +10,7 @@ import org.example.com.hospitalmanagementsystem.exception.BadRequestException;
 import org.example.com.hospitalmanagementsystem.exception.ResourceNotFoundException;
 import org.example.com.hospitalmanagementsystem.exception.UnauthorizedException;
 import org.example.com.hospitalmanagementsystem.notification.EmailService;
+import org.example.com.hospitalmanagementsystem.websocket.NotificationService;
 import org.example.com.hospitalmanagementsystem.repository.AppointmentRepository;
 import org.example.com.hospitalmanagementsystem.repository.DiagnosisRepository;
 import org.example.com.hospitalmanagementsystem.authentication.CustomUserDetails;
@@ -32,6 +33,7 @@ public class DiagnosisService {
     private final DiagnosisRepository diagnosisRepository;
     private final AppointmentRepository appointmentRepository;
     private final EmailService emailService;
+    private final NotificationService notificationService;
 
     @Value("${app.upload.dir}")
     private String uploadDir;
@@ -108,7 +110,13 @@ public class DiagnosisService {
                 appointment.getPatient().getFullName(),
                 appointment.getDoctor().getFullName()
         );
-        
+
+        notificationService.notifyDiagnosisUploaded(
+                appointment.getPatient().getId(),
+                appointmentId,
+                appointment.getDoctor().getFullName()
+        );
+
         return toResponse(diagnosis);
     }
 
